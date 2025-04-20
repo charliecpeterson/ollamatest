@@ -173,15 +173,24 @@ function cleaning()
         kill $QRSH_PID >/dev/null 2>&1 &
         show_spinner
     fi
-    
-    # 5. Remove temporary files and close SSH agent
-    if [ -f llmtmp ]; then 
-        echo -en "${CYAN}Cleaning up temporary files...${RESET} "
-        rm llmtmp >/dev/null 2>&1
-        ssh-agent -k >/dev/null 2>&1
+
+    echo -en "${CYAN}Cleaning up temporary files...${RESET} "   
+    if ssh -o BatchMode=yes -o ConnectTimeout=5 ${H2USERNAME}@hoffman2.idre.ucla.edu exit >/dev/null 2>&1; then
+        ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "sed -i '/${temp_comment}/d' ~/.ssh/authorized_keys"
+    fi
+
+    if ([[ -n "$temp_dir" ]]); then
+        rm -rf ${temp_dir}
         echo -e "${GREEN}✓${RESET}"
     fi
-    
+
+    if [ -n "${SSH_AGENT_PID}" ]; then
+        ssh-agent -k >/dev/null 2>&1 && echo "ssh-agent killed."
+    fi
+    if [ -f llmtmp ]; then 
+        rm llmtmp >/dev/null 2>&1
+    fi
+
     # Cute goodbye animation
     echo -e "\n${BLUE}╔═════════════════════════════════════════╗${RESET}"
     echo -e "${BLUE}║                                         ║${RESET}"
@@ -352,11 +361,42 @@ elif ([[ "$UI_TYPE" == "jupyter" ]]); then
   fi
 fi
 
-# Start ssh-agent without showing the "Agent pid" message
-eval $(ssh-agent) >/dev/null 2>&1
+REMOTE_HOST="hoffman2.idre.ucla.edu"
+REMOTE_USER=${H2USERNAME:-your_username_here}
+# Function to test for passwordless SSH by attempting a simple SSH connection
+function test_ssh_key() {
+    ssh -o BatchMode=yes -o ConnectTimeout=5 ${REMOTE_USER}@${REMOTE_HOST} exit
+}
 
-# Have user manually enter password once, suppress "Identity added" messages
-ssh-add >/dev/null 2>&1
+echo "Checking Hoffman2 Password..."
+
+if test_ssh_key >/dev/null 2>&1; then
+    eval "$(ssh-agent -s)"  >/dev/null
+       ssh-add >/dev/null 2>&1
+else
+    # No passwordless login; generate a temporary key and try installing it.
+    temp_dir=$(mktemp -d -t tempssh-XXXXXXXX)
+    
+    # Generate a temporary key pair with a unique comment (using a timestamp).
+    temp_comment="temporary-key-for-hpc-session-$(date +%s)"
+    ssh-keygen -q -t ed25519 -f "${temp_dir}/temp_key" -N "" -C "${temp_comment}" >/dev/null 2>&1
+
+    # Start a temporary ssh-agent.
+    eval "$(ssh-agent -s)" >/dev/null
+
+    # Add the temporary key.
+    ssh-add "${temp_dir}/temp_key" >/dev/null 2>&1
+
+    success=0
+    if ssh-copy-id -i "${temp_dir}/temp_key.pub" ${REMOTE_USER}@${REMOTE_HOST} >/dev/null 2>&1; then
+        success=1
+    fi
+
+    if [ $success -ne 1 ]; then
+        echo "Password incorrect Exiting..."
+        exit 1
+    fi
+fi
 
 # Now you can run multiple SSH commands without password prompts
 ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "echo starting ; rm -rf ~/.apptainer/instances/logs" > llmtmp
