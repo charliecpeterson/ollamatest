@@ -1,50 +1,19 @@
 #!/bin/bash
-## This script will run Rstudio server on Hoffman2
-## This uses an Apptainer container with R/Rstudio
-# Author Charlie Peterson <cpeterson@oarc.ucla.edu>
-# Date Created: 2/2/2022
-# Date Modified: 3/9/2022 - change to apptainer
 
-## TO DO:
-##
-## extra qrsh check
-## multiple core check
-##
 
 # Function to print the banner
 print_banner() {
-  local RESET=$'\e[0m'
-  local HEADER_BG=$'\e[44;97m'  # White text on blue background
-  local BORDER_BG=$'\e[46;97m'  # White text on cyan background
-  local TEXT_COLOR=$'\e[93m'    # Yellow text
-  local QUIT_MSG=$'\e[31m'      # Red text
-
-  clear  # Clears the terminal to make it clean
-
-  # Top border
-  echo -e "${BORDER_BG}══════════════════════════════════════════════════════════════════════════════════════${RESET}"
-
-  # Title
-  echo -e "${HEADER_BG}                                HOFFMAN 2 - LLM                                    ${RESET}"
-
-  # Middle separator
-  echo -e "${BORDER_BG}══════════════════════════════════════════════════════════════════════════════════════${RESET}"
-
-  # Subtext
-  echo -e "${TEXT_COLOR}                      Welcome! Please make sure to follow the usage guidelines.        ${RESET}"
-
-  # Quit message
-  echo -e "${QUIT_MSG}                                                   Press ctrl+c to quit                ${RESET}"
-
-  # Bottom border
-  echo -e "${BORDER_BG}══════════════════════════════════════════════════════════════════════════════════════${RESET}"
-}
-
-# Call the banner function
-print_banner
-tput sgr0
-
-# Capitalized color variables
+  clear
+  
+  # Get terminal width for centering
+  TERM_WIDTH=$(tput cols)
+  
+  # Center text function
+  center_text() {
+    local text="$1"
+    local padding=$(( (TERM_WIDTH - ${#text}) / 2 ))
+    printf "%${padding}s%s%${padding}s\n" "" "$text" ""
+  }
 CYAN=$'\e[1;36m'
 BLUE=$'\e[1;34m'
 GREEN=$'\e[1;32m'
@@ -52,34 +21,99 @@ YELLOW=$'\e[1;33m'
 WHITE=$'\e[1;37m'
 PURPLE=$'\e[1;35m'
 RESET=$'\e[0m'
+  # UCLA-themed animation
+  echo ""
+  for i in {1..3}; do
+    clear
+    echo ""
+    echo -e "${BLUE}    ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️    ${RESET}"
+    echo -e "${YELLOW}    🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆    ${RESET}"
+    sleep 0.1
+    clear
+    echo ""
+    echo -e "${YELLOW}    🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆 🔆    ${RESET}"
+    echo -e "${BLUE}    ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️ ⚡️    ${RESET}"
+    sleep 0.1
+  done
+  
+  clear
+  echo ""
+  echo -e "${BLUE}╔═══════════════════════════════════════════════════════════════════════════╗${RESET}"
+  echo -e "${BLUE}║                                                                           ║${RESET}"
+  echo -e "${BLUE}║  ${YELLOW}██╗  ██╗ ██████╗ ███████╗███████╗███╗   ███╗ █████╗ ███╗  ██╗██████╗     ${BLUE}║${RESET}" 
+  echo -e "${BLUE}║  ${YELLOW}██║  ██║██╔═══██╗██╔════╝██╔════╝████╗ ████║██╔══██╗████╗ ██║╚════██╗    ${BLUE}║${RESET}"
+  echo -e "${BLUE}║  ${YELLOW}███████║██║   ██║█████╗  █████╗  ██╔████╔██║███████║██╔██╗██║ █████╔╝    ${BLUE}║${RESET}"
+  echo -e "${BLUE}║  ${YELLOW}██╔══██║██║   ██║██╔══╝  ██╔══╝  ██║╚██╔╝██║██╔══██║██║╚████║██╔═══╝     ${BLUE}║${RESET}"
+  echo -e "${BLUE}║  ${YELLOW}██║  ██║╚██████╔╝██║     ██║     ██║ ╚═╝ ██║██║  ██║██║ ╚███║███████╗    ${BLUE}║${RESET}"
+  echo -e "${BLUE}║  ${YELLOW}╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝     ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚══╝╚══════╝    ${BLUE}║${RESET}"
+  echo -e "${BLUE}║                                                                           ║${RESET}"
+  echo -e "${BLUE}║                   ${CYAN}L L M   O L L A M A   L A U N C H E R${RESET}                   ${BLUE}║${RESET}"
+  echo -e "${BLUE}║                                                                           ║${RESET}"
+  echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════════════════╝${RESET}"
+  echo ""
+    echo -e " ${YELLOW}🚀 ${WHITE}INTERFACES:${RESET} ${GREEN}CLI, WebUI, Jupyter${RESET}"
+    echo -e " ${YELLOW}🔥 ${WHITE}GPU ACCESS:${RESET} ${GREEN}CUDA-enabled NVIDIA GPUs${RESET}"
+  echo -e ""
+  echo -e " ${BLUE}ⓘ ${YELLOW}Press Ctrl+C to exit at any time${RESET}"
+  echo -e " ${BLUE}ⓘ ${YELLOW}Run with ${WHITE}-h${YELLOW} flag for detailed usage information${RESET}"
+  echo ""
+}
+
+# Call the banner function
+print_banner
+tput sgr0
+
 ## USAGE ##
 usage ()
 {
-  echo -e "${CYAN}#######################################################################################${RESET}"
-  echo -e "${BLUE}##                              HOFFMAN2 LLM USAGE GUIDE                         ##${RESET}"
-  echo -e "${CYAN}#######################################################################################${RESET}"
+  clear
+  echo ""
+  echo -e "${BLUE}╔═══════════════════════════════════════════════════════════════════════════╗${RESET}"
+  echo -e "${BLUE}║                                                                           ║${RESET}"
+  echo -e "${BLUE}║                    ${YELLOW}HOFFMAN2 LLM ${CYAN}USAGE GUIDE${RESET}                            ${BLUE}║${RESET}"
+  echo -e "${BLUE}║                                                                           ║${RESET}"
+  echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════════════════╝${RESET}"
+  
+  echo -e "\n${GREEN}Launch GPU-accelerated Large Language Models on UCLA's Hoffman2 HPC cluster${RESET}\n"
 
-  echo -e "\n${GREEN}This script will create an RStudio session on a compute node on Hoffman2.${RESET}\n"
+  echo -e "${YELLOW}┌─ REQUIRED OPTIONS ${WHITE}───────────────────────────────────────────────────┐${RESET}"
+  echo -e "${YELLOW}│${RESET}"
+  echo -e "${YELLOW}│  ${WHITE}-u${RESET} [username]    Your Hoffman2 username (mandatory)${RESET}"
+  echo -e "${YELLOW}│${RESET}"
+  echo -e "${YELLOW}└───────────────────────────────────────────────────────────────────────┘${RESET}\n"
 
-  echo -e "${YELLOW}REQUIRED OPTIONS:${RESET}"
-  echo -e "  ${WHITE}-u${RESET} [username]    Your Hoffman2 username (mandatory)\n"
+  echo -e "${CYAN}┌─ RESOURCE OPTIONS ${WHITE}───────────────────────────────────────────────────┐${RESET}"
+  echo -e "${CYAN}│${RESET}"
+  echo -e "${CYAN}│  ${WHITE}-m${RESET} [MEMORY]     Memory requirements in GB ${GREEN}(default: 10 GB)${RESET}"
+  echo -e "${CYAN}│  ${WHITE}-t${RESET} [TIME]       Time of job in HH:MM:SS ${GREEN}(default: 2:00:00)${RESET}"
+  echo -e "${CYAN}│  ${WHITE}-p${RESET}              Request high-priority queue (highp)"
+  echo -e "${CYAN}│  ${WHITE}-g${RESET} [GPUTYPE]    Request GPU resources (V100, A100, A6000)"
+  echo -e "${CYAN}│  ${WHITE}-n${RESET} [CORES]      Number of cores to request ${GREEN}(default: 2)${RESET}"
+  echo -e "${CYAN}│${RESET}"
+  echo -e "${CYAN}└───────────────────────────────────────────────────────────────────────┘${RESET}\n"
 
-  echo -e "${YELLOW}OPTIONAL PARAMETERS:${RESET}"
-  echo -e "  ${WHITE}-m${RESET} [MEMORY]     Memory requirements in GB (default: 10 GB)"
-  echo -e "  ${WHITE}-t${RESET} [TIME]       Time of job in HH:MM:SS (default: 2:00:00)"
-  echo -e "  ${WHITE}-p${RESET}              Request high-priority queue (highp)"
-  echo -e "  ${WHITE}-g${RESET} [GPUTYPE]    Request GPU resources, where GPUTYPE can be 'V100', 'A100', A6000, etc."
-  echo -e "  ${WHITE}-o${RESET} [UI_TYPE]    UI type (webui, jupyter). Default: basic ollama\n"
+  echo -e "${PURPLE}┌─ INTERFACE OPTIONS ${WHITE}──────────────────────────────────────────────────┐${RESET}"
+  echo -e "${PURPLE}│${RESET}" 
+  echo -e "${PURPLE}│  ${WHITE}-o${RESET} [UI_TYPE]    UI type ${YELLOW}(webui, jupyter)${RESET}. Default: basic ollama"
+  echo -e "${PURPLE}│  ${WHITE}-l${RESET} [PORT]       Custom port for Ollama API ${GREEN}(default: 11434)${RESET}"
+  echo -e "${PURPLE}│  ${WHITE}-w${RESET} [PORT]       Custom port for WebUI ${GREEN}(default: 8081)${RESET}"
+  echo -e "${PURPLE}│  ${WHITE}-j${RESET} [PORT]       Custom port for Jupyter ${GREEN}(default: 8888)${RESET}"
+  echo -e "${PURPLE}│  ${WHITE}-d${RESET} [DIRECTORY]  Custom directory for Ollama models"
+  echo -e "${PURPLE}│                  ${GREEN}(default: \$SCRATCH/ollama_models)${RESET}"
+  echo -e "${PURPLE}│${RESET}"
+  echo -e "${PURPLE}└───────────────────────────────────────────────────────────────────────┘${RESET}\n"
 
-  echo -e "${PURPLE}HELP:${RESET}"
-  echo -e "  ${WHITE}-h${RESET}              Show this usage message\n"
+  echo -e "${GREEN}┌─ HELP ${WHITE}──────────────────────────────────────────────────────────────┐${RESET}"
+  echo -e "${GREEN}│${RESET}"
+  echo -e "${GREEN}│  ${WHITE}-h${RESET}              Show this usage message"
+  echo -e "${GREEN}│${RESET}"
+  echo -e "${GREEN}└───────────────────────────────────────────────────────────────────────┘${RESET}\n"
 
-  echo -e "${CYAN}#######################################################################################${RESET}"
+  echo -e "${BLUE}Example:${RESET} ./h2-ollama-run.sh -u username -m 20 -g A100 -o webui\n"
+  
   exit
 }
 
-# Example: Uncomment this to test calling the usage function
-# usage
 ## CLEANING UP ##
 function cleaning()
 {
@@ -92,42 +126,127 @@ function cleaning()
     # Temporarily disable trap to prevent re-entry
     trap '' INT
     
-    echo "Cleaning up resources..."
+    echo -e "\n${BLUE}┌─────────────────────────────────────────┐${RESET}"
+    echo -e "${BLUE}│${RESET}       ${YELLOW}CLEANING UP RESOURCES${RESET}             ${BLUE}│${RESET}"
+    echo -e "${BLUE}└─────────────────────────────────────────┘${RESET}\n"
     
-    # Kill SSH port forwarding processes
-    echo "Terminating SSH port forwarding..."
-    pkill -f "ssh -N -L ${ollama_port}"
-    
-    # If we have a compute node hostname, try to stop the Apptainer instance
-    if [[ -n "$out_host" ]]; then
-        echo "Stopping Apptainer instance 'myollama' on $out_host..."
+    # Function to show spinner for operations
+    show_spinner() {
+        local message="$1"
+        local pid=$!
+        local spin=0
+        local spinner=("⋊>" "⋉>" "<⋊" "<⋉")
         
-        # Use expect with better timeout handling
-expect <<- eofend > llmtmp  &
-set timeout $WALLTIME
-spawn ssh ${H2USERNAME}@hoffman2.idre.ucla.edu
-expect  {
-        "assword:" { send "${H2PASSWORD}\r";exp_continue}
-        send "export PS1='$ '\r"
-        "$ " {send "ssh $out_host 'source /u/local/Modules/default/init/modules.sh && module load apptainer && apptainer instance stop myollama' \r";exp_continue}
-        expect "$ "
-        send "exit\r"
-}
-eofend
-
+        echo -n -e "${CYAN}$message${RESET} "
+        while kill -0 $pid 2>/dev/null; do
+            echo -n -e "\b${spinner[$((spin % 4))]}"
+            spin=$((spin + 1))
+            sleep 0.2
+        done
+        echo -e "\b${GREEN}✓${RESET}"
+    }
+    
+    # 1. Terminate Hoffman2 job if JOBID is set
+    if [[ -n "$JOBID" ]]; then
+        echo -en "${CYAN}Terminating job ${WHITE}$JOBID${CYAN} on Hoffman2...${RESET} "
+        ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "qdel $JOBID" >/dev/null 2>&1 &
+        show_spinner
     fi
     
-    # Remove temporary files
-    if [ -f llmtmp ] ; then rm llmtmp ; fi
-    echo "Cleanup complete. Exiting."
+    # 2. Stop Apptainer instance if out_host is set
+    if [[ -n "$out_host" ]]; then
+        echo -en "${CYAN}Stopping Apptainer instance on ${WHITE}$out_host${CYAN}...${RESET} "
+        ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh $out_host 'source /u/local/Modules/default/init/modules.sh ; module purge ; module load apptainer ; apptainer instance stop myollama'" >/dev/null 2>&1 &
+        show_spinner
+    fi
+    
+    # 3. Kill SSH port forwarding
+    if [[ -n "$SSH_PORT_FWD_PID" ]]; then
+        echo -en "${CYAN}Closing network tunnels...${RESET} "
+        kill $SSH_PORT_FWD_PID >/dev/null 2>&1 &
+        show_spinner
+    fi
+    
+    # 4. Kill QRSH process
+    if [[ -n "$QRSH_PID" ]]; then
+        echo -en "${CYAN}Closing remote session...${RESET} "
+        kill $QRSH_PID >/dev/null 2>&1 &
+        show_spinner
+    fi
+    
+    # 5. Remove temporary files and close SSH agent
+    if [ -f llmtmp ]; then 
+        echo -en "${CYAN}Cleaning up temporary files...${RESET} "
+        rm llmtmp >/dev/null 2>&1
+        ssh-agent -k >/dev/null 2>&1
+        echo -e "${GREEN}✓${RESET}"
+    fi
+    
+    # Cute goodbye animation
+    echo -e "\n${BLUE}╔═════════════════════════════════════════╗${RESET}"
+    echo -e "${BLUE}║                                         ║${RESET}"
+    echo -e "${BLUE}║${RESET}    ${YELLOW}Thanks for using Hoffman2 OLLAMA!${RESET}    ${BLUE}║${RESET}"
+    echo -e "${BLUE}║${RESET}                                         ${BLUE}║${RESET}"
+    echo -e "${BLUE}║${RESET}    ${PURPLE}See you next time! 👋${RESET}                ${BLUE}║${RESET}"
+    echo -e "${BLUE}║                                         ║${RESET}"
+    echo -e "${BLUE}╚═════════════════════════════════════════╝${RESET}"
+    echo ""
+    
+    # Small animation
+    message=" Powering down AI..."
+    msg_length=${#message}
+    spinner=("🧠" "⚡" "💫" "✨")
+
+    for i in $(seq 0 $msg_length); do
+      clear_line="\r\033[K"
+      spin_idx=$((i % 4))
+      printf "${clear_line}${CYAN}%s%s${RESET}" "${spinner[$spin_idx]}" "${message:0:$i}"
+      sleep 0.1
+    done
+
+    # Add final flourish
+    printf "\r\033[K${CYAN}%s %s${RESET}" "🧠" "${message}"
+    sleep 0.5
+    echo -e "\n\n${GREEN}Goodbye! 🚀${RESET}\n"
+    
     exit 0
 }
 
+# Check if a port is available
+check_port_available() {
+  local port=$1
+
+  # Prefer lsof if available
+  if command -v lsof >/dev/null 2>&1; then
+    if lsof -iTCP:"$port" -sTCP:LISTEN -t >/dev/null 2>&1; then
+      return 1  # Port is actively in use (LISTENING)
+    fi
+
+  # Fallback to netstat
+  elif command -v netstat >/dev/null 2>&1; then
+    if netstat -an | grep -E "LISTEN" | grep -q ":$port\b"; then
+      return 1  # Port is actively in use
+    fi
+
+  # Optional: Add `ss` support if available
+  elif command -v ss >/dev/null 2>&1; then
+    if ss -ltn | awk '{print $4}' | grep -q ":$port$"; then
+      return 1
+    fi
+
+  else
+    echo "Warning: Cannot check port availability, missing tools."
+    return 0  # Assume it's available to avoid false negatives
+  fi
+
+  return 0  # Port is available
+}
+
 # Set traps for different signals to ensure cleanup happens
-trap cleaning EXIT INT TERM
+trap cleaning EXIT INT TERM HUP
 
 ## GETTING COMMAND LINE OPTIONS ###
-while getopts ":u:t:m:e:v:g:o:ph" options ; do
+while getopts ":u:t:m:e:v:g:o:n:d:l:w:j:ph" options ; do
   case $options in
     h ) usage; exit ;;               # Show usage guide
     u ) H2USERNAME=$OPTARG  ;;        # Hoffman2 username
@@ -137,24 +256,16 @@ while getopts ":u:t:m:e:v:g:o:ph" options ; do
     p ) HIGHP="TRUE" ;;               # Set high priority (HIGHP) to TRUE
     g ) GPUTYPE=$OPTARG ;;            # Set GPU type to the specified value
     o ) UI_TYPE=$OPTARG ;;            # Set UI type (webui, jupyter, etc.)
+    n ) NUMCORES=$OPTARG ;;           # Set number of cores
+    d ) OLLAMA_MODELS_DIR=$OPTARG ;;  # Custom directory for Ollama models
+    l ) OLLAMA_PORT=$OPTARG ;;        # Custom Ollama port
+    w ) WEBUI_PORT=$OPTARG ;;         # Custom WebUI port
+    j ) JUPYTER_PORT=$OPTARG ;;       # Custom Jupyter port
     : ) echo "-$OPTARG requires an argument"; usage; exit ;;  # Missing argument case
     ? ) echo "-$OPTARG is not an option"; usage ; exit ;;     # Unknown option case
   esac
 done
 
-## If -v wasn't provided, default to 4.1.0
-if [ -z "${RSTUDIO_VERSION}" ] ; then
-  RSTUDIO_VERSION="4.1.0"
-fi
-
-## CHECK FOR EXPECT ##
-if ! command -v expect &> /dev/null
-then
-        echo "You MUST have the expect command installed on your system... Exiting"
-        exit
-fi
-
-## CHECK ARGS ##
 
 ## CHECK USERNAME ##
 if [ -z ${H2USERNAME} ] ; then
@@ -169,54 +280,6 @@ if [ -z ${JOBMEM} ] ; then JOBMEM=10 ; fi
 if [ -z ${JOBTIME} ] ; then JOBTIME="2:00:00" ; fi
 WALLTIME=`echo "$JOBTIME" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }'`
 
-## CHECK FOR SSH PASSWORD
-
-## PASSWORDLESS CHECK
-echo "Checking for Hoffman2 password..."
-if ! ssh -o BatchMode=yes "${H2USERNAME}@hoffman2.idre.ucla.edu" true 2>/dev/null; then
-        echo "Please enter your Hoffman2 Password for User: ${H2USERNAME}"
-        read -s H2PASSWORD
-else
-        H2PASSWORD=""
-        PASSWORDLESS="true"
-        PASSWORD_CHECK="true"
-fi
-
-if [[ "${PASSWORDLESS}"  != "true" ]] ; then
-PASSWORD_CHECK=false
-expect <<- eof3 > llmtmp  
-set timeout $WALLTIME
-spawn ssh -o NumberOfPasswordPrompts=1 ${H2USERNAME}@hoffman2.idre.ucla.edu
-     expect "*assword:" 
-     send "${H2PASSWORD}\r"
-     expect "$ "
-eof3
-check_pass=`cat llmtmp | grep "Permission denied" | wc -l`
-rm llmtmp
-for itr in 1 2 3 ; do
-if [[ "${check_pass}" -ne "0" ]] ; then
-        echo "Incorrect Password: Please enter your Hoffman2 Password for User: ${H2USERNAME}"
-        read -s H2PASSWORD
-else
-        PASSWORD_CHECK=true
-        break
-fi
-
-expect <<- eof3 > llmtmp
-set timeout $WALLTIME
-spawn ssh -o NumberOfPasswordPrompts=1 ${H2USERNAME}@hoffman2.idre.ucla.edu
-     expect "*assword:"
-     send "${H2PASSWORD}\r"
-     expect "$ "
-eof3
-check_pass=`cat llmtmp | grep "Permission denied" | wc -l`
-rm llmtmp
-done
-if [[ "$PASSWORD_CHECK"  != "true" ]] ; then
-        echo "Password is invaild"
-        exit 1
-fi
-fi
 
 ## CHECK EXTRA ARGS ##
 EXTRA_ARG=""
@@ -229,39 +292,76 @@ if [[ -n "$GPUTYPE" ]]; then
   EXTRA_ARG+="${GPUTYPE},gpu,cuda=1,"
 fi
 
-## STARING RSTUDIO JOB ##
+# Check NUMCORES
+if [[ -z "$NUMCORES" ]]; then
+  NUMCORES=2
+fi
+
+if [[ "$NUMCORES" -le 1 ]]; then
+  echo -e "\e[31mYou must request at least 2 cores\e[0m"
+  exit 1
+fi
+
+# Set Ollama models directory (with default to $SCRATCH/ollama_models)
+if [[ -z "$OLLAMA_MODELS_DIR" ]]; then
+  OLLAMA_MODELS_DIR="\$SCRATCH/ollama_models"
+else
+  # If user provided a custom directory, make sure it exists
+  echo "Using custom Ollama models directory: ${OLLAMA_MODELS_DIR}"
+fi
+
+## STARING Ollama JOB ##
 sleep 2
 trap cleaning EXIT
 
-qrsh_cmd=`echo 'source /u/local/Modules/default/init/modules.sh ; module purge ; module load apptainer ; module list ; echo HOSTNAME ; echo \\\$HOSTNAME ; apptainer instance run --nv \\\$H2_CONTAINER_LOC/h2-ollama-0.6.5-webui-0.6.2.sif  myollama ; echo  ollama_start ; sleep infinity'`
-qrsh_cmd_webui=`echo 'source /u/local/Modules/default/init/modules.sh ; module purge ; module load apptainer ; module list ; echo HOSTNAME ; echo \\\$HOSTNAME ; apptainer instance run --nv \\\$H2_CONTAINER_LOC/h2-ollama-0.6.5-webui-0.6.2.sif  myollama openwebui ; echo  ollama_start ; sleep infinity'`
-qrsh_cmd_jupyter=`echo 'source /u/local/Modules/default/init/modules.sh ; module purge ; module load apptainer ; module list ; echo HOSTNAME ; echo \\\$HOSTNAME ; apptainer instance run --nv \\\$H2_CONTAINER_LOC/h2-ollama-0.6.5-webui-0.6.2.sif  myollama jupyter ; echo  ollama_start ; sleep infinity'`
-
-## SELECT COMMAND BASED ON UI TYPE ##
+# Determine the UI parameter for apptainer based on UI_TYPE
 if [[ "$UI_TYPE" == "webui" ]]; then
-  ssh_cmd="echo starting ; qrsh -N OLLAMA -l ${EXTRA_ARG}h_data=${JOBMEM}G,h_rt=${JOBTIME} '${qrsh_cmd_webui}'"
+  UI_PARAM="openwebui"
   webui_port=8081
 elif [[ "$UI_TYPE" == "jupyter" ]]; then
-  ssh_cmd="echo starting ; qrsh -N OLLAMA -l ${EXTRA_ARG}h_data=${JOBMEM}G,h_rt=${JOBTIME} '${qrsh_cmd_jupyter}'"
+  UI_PARAM="jupyter"
   jupyter_port=8888
 else
-  ssh_cmd="echo starting ; qrsh -N OLLAMA -l ${EXTRA_ARG}h_data=${JOBMEM}G,h_rt=${JOBTIME} '${qrsh_cmd_webui}'"
+  UI_PARAM=""
 fi
 
-# Export the ssh_cmd for use in the expect script
-export ssh_cmd
+# Set port values (use custom if provided, otherwise defaults)
+ollama_port=${OLLAMA_PORT:-11434}
+webui_port=${WEBUI_PORT:-8081}
+jupyter_port=${JUPYTER_PORT:-8888}
 
-expect <<- eof1 > llmtmp  &
-set timeout $WALLTIME
-spawn ssh ${H2USERNAME}@hoffman2.idre.ucla.edu
-expect  {
-        "assword:" { send "${H2PASSWORD}\r";exp_continue}
-        send "export PS1='$ '\r"
-        "$ " {send "$env(${ssh_cmd})\r";exp_continue}
-        send "sleep $WALLTIME"
-        expect "$ "
-}
-eof1
+# Check if ollama port is available
+if ! check_port_available "$ollama_port"; then
+  echo -e "${RED}Error: Port $ollama_port (Ollama API) is already in use.${RESET}"
+  echo -e "${YELLOW}Use -l option to specify a different port.${RESET}"
+  exit 1
+fi
+
+# Check UI-specific ports based on UI_TYPE
+if [[ "$UI_TYPE" == "webui" ]]; then
+  if ! check_port_available "$webui_port"; then
+    echo -e "${RED}Error: Port $webui_port (WebUI) is already in use.${RESET}"
+    echo -e "${YELLOW}Use -w option to specify a different port.${RESET}"
+    exit 1
+  fi
+elif [[ "$UI_TYPE" == "jupyter" ]]; then
+  if ! check_port_available "$jupyter_port"; then
+    echo -e "${RED}Error: Port $jupyter_port (Jupyter) is already in use.${RESET}"
+    echo -e "${YELLOW}Use -j option to specify a different port.${RESET}"
+    exit 1
+  fi
+fi
+
+# Start ssh-agent without showing the "Agent pid" message
+eval $(ssh-agent) >/dev/null 2>&1
+
+# Have user manually enter password once, suppress "Identity added" messages
+ssh-add >/dev/null 2>&1
+
+# Now you can run multiple SSH commands without password prompts
+ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "echo starting ; rm -rf ~/.apptainer/instances/logs" > llmtmp
+ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "qrsh -N MYOLLAMA -l ${EXTRA_ARG}h_data=${JOBMEM}G,h_rt=${JOBTIME} -pe shared ${NUMCORES} 'source /u/local/Modules/default/init/modules.sh ; module purge ; module load apptainer ; module list ; echo HOSTNAME ; echo \$HOSTNAME ; export ollama_port=$ollama_port ; export webui_port=$webui_port ; export jupyter_port=$jupyter_port ; export OLLAMA_MODELS=${OLLAMA_MODELS_DIR} ; apptainer instance run --nv \$H2_CONTAINER_LOC/h2-ollama-mod-webui-0.6.2.sif myollama ${UI_PARAM} ; echo ollama_start ; sleep infinity'" >> llmtmp 2>/dev/null &
+QRSH_PID=$!
 
 ## CHECK if SSH WORKED ##
 start_bool=`cat llmtmp | grep starting | wc -l`
@@ -271,10 +371,36 @@ while [[ ${start_bool} -eq 0 ]]; do
 done 
 
 ## WAITING FOR JOB TO START ##
+# Retrieve the job ID from Hoffman2 with retries
+jobid_spinner=("🔍" "🔎" "🔍" "🔎")
+jobid_attempts=0
+max_jobid_attempts=60
+
+echo -e "${CYAN}Retrieving job ID...${RESET}"
+
+while [[ jobid_attempts -lt max_jobid_attempts ]]; do
+  JOBID=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "qstat | grep MYOLLAMA | grep ${H2USERNAME} | awk '{print \$1}'")
+  
+  if [[ -n "$JOBID" ]]; then
+    echo -e "\r${GREEN}Job ID: ${JOBID}${RESET} (use for monitoring or cancellation)"
+    break
+  else
+    jobid_attempts=$((jobid_attempts + 1))
+    emoji=${jobid_spinner[$((jobid_attempts % 4))]}
+    printf "\r%s Waiting for job ID (attempt %d/%d)..." "$emoji" "$jobid_attempts" "$max_jobid_attempts"
+    sleep 1
+  fi
+done
+
+if [[ -z "$JOBID" ]]; then
+  echo -e "\n${YELLOW}Warning: Could not retrieve job ID after $max_jobid_attempts attempts.${RESET}"
+  echo -e "${YELLOW}The job may still be running. Continuing...${RESET}"
+fi
 
 spinner=("🔄" "🚀" "🌟" "🔥" "✨" "🌀" "💫")
 printf "Waiting for ollama to start..."
-while [[ ${out_tmp} -ne 2 ]]
+out_tmp=0
+while [[ ${out_tmp} -ne 1 ]]
 do
   for emoji in "${spinner[@]}"; do
     printf "\r%s Waiting for ollama job to start on Hoffman2..." "$emoji" 
@@ -284,57 +410,135 @@ do
 done
 echo -e "\n🚀 Ollama is now ready!"
 
-### OPEN UP PORT
-out_host=$(awk '/HOSTNAME/{getline; print $1}' llmtmp | tail -1 | tr -d '\r' | tr -d '\n')
-ollama_port=11434
-out2="${ollama_port}:${out_host}:${ollama_port}"
 
+### OPEN UP PORT
+out_host=$(tr -d '\r' < llmtmp | awk '/^HOSTNAME$/ {getline; print $1; exit}' | tr -d '\n')
+  # Construct path to log file
+LOG_PATH="~/.apptainer/instances/logs/${out_host}/${H2USERNAME}/myollama"
+
+echo ""
 echo "Hoffman2 compute node is ${out_host}"
-echo "ollama_port is ${ollama_port}"
+
+
+## Checking ports
+new_ollama_port=""
+while [[ -z "$new_ollama_port" ]]; do
+  new_ollama_port=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"OLLAMA Running on .* with port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*$\"'")
+  sleep 1
+done
+ollama_port=$new_ollama_port
+out2="${ollama_port}:${out_host}:${ollama_port}"
+echo "ollama is running on port is ${ollama_port}"
 
 # Setup additional port forwarding based on UI type
 if [[ "$UI_TYPE" == "webui" ]]; then
-  webui_port=8081
-  webui_mapping="${webui_port}:${out_host}:${webui_port}"
+  new_webui_port=""
+  while [[ -z "$new_webui_port" ]]; do
+    new_webui_port=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"Running Open WebUI with port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*\"'")
+    sleep 0.5
+  done
+  webui_port=$new_webui_port
   echo "webui_port is ${webui_port}"
+  webui_mapping="${webui_port}:${out_host}:${webui_port}"
   
   # Port forwarding for both Ollama and WebUI
-  expect <<- eof2 > /dev/null &
-set timeout $WALLTIME
-spawn ssh -N -L ${ollama_port}:${out_host}:${ollama_port} -L ${webui_port}:${out_host}:${webui_port} ${H2USERNAME}@hoffman2.idre.ucla.edu
-     expect "*assword:"
-     send "${H2PASSWORD}\r"
-     expect "$ "
-eof2
+   ssh -N -L ${ollama_port}:${out_host}:${ollama_port} -L ${webui_port}:${out_host}:${webui_port} ${H2USERNAME}@hoffman2.idre.ucla.edu 2>/dev/null &
+   SSH_PORT_FWD_PID=$!
+
 elif [[ "$UI_TYPE" == "jupyter" ]]; then
-  jupyter_port=8888
-  jupyter_mapping="${jupyter_port}:${out_host}:${jupyter_port}"
+  new_jupyter_port=""
+  while [[ -z "$new_jupyter_port" ]]; do
+    new_jupyter_port=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"Starting Jupyter Lab on port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*\"'")
+    sleep 1
+  done
+  jupyter_port=$new_jupyter_port
   echo "jupyter_port is ${jupyter_port}"
+  jupyter_mapping="${jupyter_port}:${out_host}:${jupyter_port}"
   
   # Port forwarding for both Ollama and Jupyter
-  expect <<- eof2 > /dev/null &
-set timeout $WALLTIME
-spawn ssh -N -L ${ollama_port}:${out_host}:${ollama_port} -L ${jupyter_port}:${out_host}:${jupyter_port} ${H2USERNAME}@hoffman2.idre.ucla.edu
-     expect "*assword:"
-     send "${H2PASSWORD}\r"
-     expect "$ "
-eof2
+  ssh -N -L ${ollama_port}:${out_host}:${ollama_port} -L ${jupyter_port}:${out_host}:${jupyter_port} ${H2USERNAME}@hoffman2.idre.ucla.edu 2>/dev/null &
+  SSH_PORT_FWD_PID=$!
+
 else
   # Original port forwarding for Ollama only
-  expect <<- eof2 > /dev/null &
-set timeout $WALLTIME
-spawn ssh -N -L ${ollama_port}:${out_host}:${ollama_port} ${H2USERNAME}@hoffman2.idre.ucla.edu
-     expect "*assword:"
-     send "${H2PASSWORD}\r"
-     expect "$ "
-eof2
+  ssh -N -L ${ollama_port}:${out_host}:${ollama_port} ${H2USERNAME}@hoffman2.idre.ucla.edu 2>/dev/null &
+  SSH_PORT_FWD_PID=$!
+fi
+
+# Wait for Ollama API and models to be available
+echo -e "\n${CYAN}Waiting for Ollama API to initialize...${RESET}"
+spinner=("🧠" "⚙️" "🔄" "📊" "🔍" "📡" "🌐")
+model_count=0
+max_attempts=60  # Avoid infinite loops
+
+# Loop until models are available
+attempts=0
+while [[ $model_count -eq 0 && $attempts -lt $max_attempts ]]; do
+  attempts=$((attempts + 1))
+  
+  for emoji in "${spinner[@]}"; do
+    printf "\r%s Connecting to Ollama API..." "$emoji"
+    
+    # Check if Ollama API is responding
+    if curl -s "http://localhost:${ollama_port}/api/tags" &>/dev/null; then
+      # If we have jq, use it to count models
+      if command -v jq &> /dev/null; then
+        model_list=$(curl -s "http://localhost:${ollama_port}/api/tags" 2>/dev/null)
+        model_count=$(echo "$model_list" | jq -r '.models | length')
+        
+        # If we found models, break out of the spinner loop
+        if [[ $model_count -gt 0 ]]; then
+          break 2  # Break out of both loops
+        fi
+      else
+        # Without jq, check if we get a non-empty response containing "models"
+        if curl -s "http://localhost:${ollama_port}/api/tags" | grep -q '"models"'; then
+          model_count=1  # Assume models exist if key is found
+          break 2  # Break out of both loops
+        fi
+      fi
+    fi
+    
+    sleep 0.5
+  done
+  
+  # If we've tried many times and still no models, just continue
+  if [[ $attempts -ge $max_attempts ]]; then
+    echo -e "\n${YELLOW}Ollama API seems to be running, but no models were detected.${RESET}"
+    break
+  fi
+done
+
+echo -e "\n🚀 Ollama API is ready at ${GREEN}http://localhost:${ollama_port}${RESET}"
+
+# Display available models
+if ! command -v jq &> /dev/null; then
+  echo -e "${YELLOW}Note: jq is not installed. Model details will be limited.${RESET}"
+  # Simple fallback if jq is not available
+  echo -e "${CYAN}Available models:${RESET}"
+  curl -s "http://localhost:${ollama_port}/api/tags" | grep -o '"name":"[^"]*"' | cut -d'"' -f4
+else
+  if [[ $model_count -gt 0 ]]; then
+    echo -e "\n${CYAN}Available models:${RESET}"
+    echo -e "${WHITE}MODEL NAME       PARAMETERS  QUANT      FAMILY     SIZE      MODIFIED${RESET}"
+    echo "$model_list" | jq -r '.models[] | 
+      [.name,
+       .details.parameter_size,
+       .details.quantization_level,
+       .details.family,
+       (.size / 1024 / 1024 / 1024),
+       .modified_at] |
+      @tsv' | awk -F'\t' '{printf "%-15s %-11s %-10s %-10s %.2f GB  %s\n", $1, $2, $3, $4, $5, $6}'
+  else
+    echo -e "${YELLOW}No models found. You may need to pull a model first.${RESET}"
+    echo -e "Example: ${WHITE}curl -X POST http://localhost:${ollama_port}/api/pull -d '{\"model\":\"llama3:latest\"}'${RESET}"
+  fi
 fi
 
 ## OPENING UP BROWSER ##
 spinner=("🌍" "🌎" "🌏" "🌕" "🌖" "🌗" "🌘")
 
 if [[ "$UI_TYPE" == "webui" ]]; then
-
   # Wait for WebUI to be ready
   while ! curl -s -o /dev/null -w "%{http_code}" http://localhost:${webui_port} | grep -qE "200|302|403"
   do
@@ -361,20 +565,34 @@ elif [[ "$UI_TYPE" == "jupyter" ]]; then
       sleep 0.3
     done
   done
-  echo -e "\n🚀 Jupyter is now ready ${GREEN}http://localhost:${jupyter_port}${RESET}!"
-
-  # Auto-open browser for Jupyter
-  if command -v xdg-open &> /dev/null; then 
-    xdg-open http://localhost:${jupyter_port}
-  elif command -v open &> /dev/null; then 
-    open http://localhost:${jupyter_port}
+  
+  
+  # Extract token from logs
+  jupyter_token=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"token=[a-zA-Z0-9]*\" ${LOG_PATH}.err | tail -1 | cut -d= -f2'")
+  
+  if [[ -n "$jupyter_token" ]]; then
+    # Token found, construct the full URL
+    jupyter_url="http://localhost:${jupyter_port}/lab?token=${jupyter_token}"
+    echo -e "\n🚀 Jupyter is now ready at ${GREEN}${jupyter_url}${RESET}!"
+    
+    # Auto-open browser with token
+    if command -v xdg-open &> /dev/null; then 
+      xdg-open "${jupyter_url}"
+    elif command -v open &> /dev/null; then 
+      open "${jupyter_url}"
+    fi
+  else
+    echo -e "\n🚀 Jupyter is ready at ${GREEN}http://localhost:${jupyter_port}${RESET}"    
+    # Open browser without token
+    if command -v xdg-open &> /dev/null; then 
+      xdg-open "http://localhost:${jupyter_port}"
+    elif command -v open &> /dev/null; then 
+      open "http://localhost:${jupyter_port}"
+    fi
   fi
 fi
-echo -e $"You can now access Ollama API at ${GREEN}http://localhost:${ollama_port}${RESET}"
+
 
 ### WAITING UNTIL WALLTIME ##
 echo -e "\n ${YELLOW}Press ${RED}ctrl+c${YELLOW} to exit the script at any time!${RESET}"
 sleep $WALLTIME
-
-## WAITING FOR JOB TO START ##
-
