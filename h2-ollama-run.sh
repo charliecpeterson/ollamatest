@@ -118,7 +118,7 @@ usage ()
 function cleaning()
 {
     # Prevent multiple executions of cleaning function
-    if [[ "$CLEANING_IN_PROGRESS" == "true" ]]; then
+    if ([[ "$CLEANING_IN_PROGRESS" == "true" ]]); then
         return
     fi
     CLEANING_IN_PROGRESS=true
@@ -161,14 +161,14 @@ function cleaning()
     fi
     
     # 3. Kill SSH port forwarding
-    if [[ -n "$SSH_PORT_FWD_PID" ]]; then
+    if ([[ -n "$SSH_PORT_FWD_PID" ]]); then
         echo -en "${CYAN}Closing network tunnels...${RESET} "
         kill $SSH_PORT_FWD_PID >/dev/null 2>&1 &
         show_spinner
     fi
     
     # 4. Kill QRSH process
-    if [[ -n "$QRSH_PID" ]]; then
+    if ([[ -n "$QRSH_PID" ]]); then
         echo -en "${CYAN}Closing remote session...${RESET} "
         kill $QRSH_PID >/dev/null 2>&1 &
         show_spinner
@@ -284,26 +284,26 @@ WALLTIME=`echo "$JOBTIME" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }'`
 ## CHECK EXTRA ARGS ##
 EXTRA_ARG=""
 # Add "highp" if HIGHP is true
-if [[ "$HIGHP" == "TRUE" ]]; then
+if ([[ "$HIGHP" == "TRUE" ]]); then
   EXTRA_ARG+="highp,"
 fi
 # Add GPU type if GPUTYPE exists
-if [[ -n "$GPUTYPE" ]]; then
+if ([[ -n "$GPUTYPE" ]]); then
   EXTRA_ARG+="${GPUTYPE},gpu,cuda=1,"
 fi
 
 # Check NUMCORES
-if [[ -z "$NUMCORES" ]]; then
+if ([[ -z "$NUMCORES" ]]); then
   NUMCORES=2
 fi
 
-if [[ "$NUMCORES" -le 1 ]]; then
+if ([[ "$NUMCORES" -le 1 ]]); then
   echo -e "\e[31mYou must request at least 2 cores\e[0m"
   exit 1
 fi
 
 # Set Ollama models directory (with default to $SCRATCH/ollama_models)
-if [[ -z "$OLLAMA_MODELS_DIR" ]]; then
+if ([[ -z "$OLLAMA_MODELS_DIR" ]]); then
   OLLAMA_MODELS_DIR="\$SCRATCH/ollama_models"
 else
   # If user provided a custom directory, make sure it exists
@@ -315,10 +315,10 @@ sleep 2
 trap cleaning EXIT
 
 # Determine the UI parameter for apptainer based on UI_TYPE
-if [[ "$UI_TYPE" == "webui" ]]; then
+if ([[ "$UI_TYPE" == "webui" ]]); then
   UI_PARAM="openwebui"
   webui_port=8081
-elif [[ "$UI_TYPE" == "jupyter" ]]; then
+elif ([[ "$UI_TYPE" == "jupyter" ]]); then
   UI_PARAM="jupyter"
   jupyter_port=8888
 else
@@ -338,13 +338,13 @@ if ! check_port_available "$ollama_port"; then
 fi
 
 # Check UI-specific ports based on UI_TYPE
-if [[ "$UI_TYPE" == "webui" ]]; then
+if ([[ "$UI_TYPE" == "webui" ]]); then
   if ! check_port_available "$webui_port"; then
     echo -e "${RED}Error: Port $webui_port (WebUI) is already in use.${RESET}"
     echo -e "${YELLOW}Use -w option to specify a different port.${RESET}"
     exit 1
   fi
-elif [[ "$UI_TYPE" == "jupyter" ]]; then
+elif ([[ "$UI_TYPE" == "jupyter" ]]); then
   if ! check_port_available "$jupyter_port"; then
     echo -e "${RED}Error: Port $jupyter_port (Jupyter) is already in use.${RESET}"
     echo -e "${YELLOW}Use -j option to specify a different port.${RESET}"
@@ -381,7 +381,7 @@ echo -e "${CYAN}Retrieving job ID...${RESET}"
 while [[ jobid_attempts -lt max_jobid_attempts ]]; do
   JOBID=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "qstat | grep MYOLLAMA | grep ${H2USERNAME} | awk '{print \$1}'")
   
-  if [[ -n "$JOBID" ]]; then
+  if ([[ -n "$JOBID" ]]); then
     echo -e "\r${GREEN}Job ID: ${JOBID}${RESET} (use for monitoring or cancellation)"
     break
   else
@@ -392,7 +392,7 @@ while [[ jobid_attempts -lt max_jobid_attempts ]]; do
   fi
 done
 
-if [[ -z "$JOBID" ]]; then
+if ([[ -z "$JOBID" ]]); then
   echo -e "\n${YELLOW}Warning: Could not retrieve job ID after $max_jobid_attempts attempts.${RESET}"
   echo -e "${YELLOW}The job may still be running. Continuing...${RESET}"
 fi
@@ -400,7 +400,7 @@ fi
 spinner=("🔄" "🚀" "🌟" "🔥" "✨" "🌀" "💫")
 printf "Waiting for ollama to start..."
 out_tmp=0
-while [[ ${out_tmp} -ne 1 ]]
+while ([[ ${out_tmp} -ne 1 ]])
 do
   for emoji in "${spinner[@]}"; do
     printf "\r%s Waiting for ollama job to start on Hoffman2..." "$emoji" 
@@ -422,7 +422,7 @@ echo "Hoffman2 compute node is ${out_host}"
 
 ## Checking ports
 new_ollama_port=""
-while [[ -z "$new_ollama_port" ]]; do
+while ([[ -z "$new_ollama_port" ]]); do
   new_ollama_port=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"OLLAMA Running on .* with port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*$\"'")
   sleep 1
 done
@@ -431,9 +431,9 @@ out2="${ollama_port}:${out_host}:${ollama_port}"
 echo "ollama is running on port is ${ollama_port}"
 
 # Setup additional port forwarding based on UI type
-if [[ "$UI_TYPE" == "webui" ]]; then
+if ([[ "$UI_TYPE" == "webui" ]]); then
   new_webui_port=""
-  while [[ -z "$new_webui_port" ]]; do
+  while ([[ -z "$new_webui_port" ]]); do
     new_webui_port=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"Running Open WebUI with port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*\"'")
     sleep 0.5
   done
@@ -445,9 +445,9 @@ if [[ "$UI_TYPE" == "webui" ]]; then
    ssh -N -L ${ollama_port}:${out_host}:${ollama_port} -L ${webui_port}:${out_host}:${webui_port} ${H2USERNAME}@hoffman2.idre.ucla.edu 2>/dev/null &
    SSH_PORT_FWD_PID=$!
 
-elif [[ "$UI_TYPE" == "jupyter" ]]; then
+elif ([[ "$UI_TYPE" == "jupyter" ]]); then
   new_jupyter_port=""
-  while [[ -z "$new_jupyter_port" ]]; do
+  while ([[ -z "$new_jupyter_port" ]]); do
     new_jupyter_port=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"Starting Jupyter Lab on port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*\"'")
     sleep 1
   done
@@ -473,7 +473,7 @@ max_attempts=60  # Avoid infinite loops
 
 # Loop until models are available
 attempts=0
-while [[ $model_count -eq 0 && $attempts -lt $max_attempts ]]; do
+while ([[ $model_count -eq 0 && $attempts -lt $max_attempts ]]); do
   attempts=$((attempts + 1))
   
   for emoji in "${spinner[@]}"; do
@@ -487,7 +487,7 @@ while [[ $model_count -eq 0 && $attempts -lt $max_attempts ]]; do
         model_count=$(echo "$model_list" | jq -r '.models | length')
         
         # If we found models, break out of the spinner loop
-        if [[ $model_count -gt 0 ]]; then
+        if ([[ $model_count -gt 0 ]]); then
           break 2  # Break out of both loops
         fi
       else
@@ -503,7 +503,7 @@ while [[ $model_count -eq 0 && $attempts -lt $max_attempts ]]; do
   done
   
   # If we've tried many times and still no models, just continue
-  if [[ $attempts -ge $max_attempts ]]; then
+  if ([[ $attempts -ge $max_attempts ]]); then
     echo -e "\n${YELLOW}Ollama API seems to be running, but no models were detected.${RESET}"
     break
   fi
@@ -518,7 +518,7 @@ if ! command -v jq &> /dev/null; then
   echo -e "${CYAN}Available models:${RESET}"
   curl -s "http://localhost:${ollama_port}/api/tags" | grep -o '"name":"[^"]*"' | cut -d'"' -f4
 else
-  if [[ $model_count -gt 0 ]]; then
+  if ([[ $model_count -gt 0 ]]); then
     echo -e "\n${CYAN}Available models:${RESET}"
     echo -e "${WHITE}MODEL NAME       PARAMETERS  QUANT      FAMILY     SIZE      MODIFIED${RESET}"
     echo "$model_list" | jq -r '.models[] | 
@@ -538,7 +538,7 @@ fi
 ## OPENING UP BROWSER ##
 spinner=("🌍" "🌎" "🌏" "🌕" "🌖" "🌗" "🌘")
 
-if [[ "$UI_TYPE" == "webui" ]]; then
+if ([[ "$UI_TYPE" == "webui" ]]); then
   # Wait for WebUI to be ready
   while ! curl -s -o /dev/null -w "%{http_code}" http://localhost:${webui_port} | grep -qE "200|302|403"
   do
@@ -556,7 +556,7 @@ if [[ "$UI_TYPE" == "webui" ]]; then
     open http://localhost:${webui_port}
   fi
 
-elif [[ "$UI_TYPE" == "jupyter" ]]; then
+elif ([[ "$UI_TYPE" == "jupyter" ]]); then
   # Wait for Jupyter to be ready
   while ! curl -s -o /dev/null -w "%{http_code}" http://localhost:${jupyter_port} | grep -qE "200|302|403"
   do
@@ -570,7 +570,7 @@ elif [[ "$UI_TYPE" == "jupyter" ]]; then
   # Extract token from logs
   jupyter_token=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"token=[a-zA-Z0-9]*\" ${LOG_PATH}.err | tail -1 | cut -d= -f2'")
   
-  if [[ -n "$jupyter_token" ]]; then
+  if ([[ -n "$jupyter_token" ]]); then
     # Token found, construct the full URL
     jupyter_url="http://localhost:${jupyter_port}/lab?token=${jupyter_token}"
     echo -e "\n🚀 Jupyter is now ready at ${GREEN}${jupyter_url}${RESET}!"
@@ -592,7 +592,299 @@ elif [[ "$UI_TYPE" == "jupyter" ]]; then
   fi
 fi
 
+### INTERACTIVE OLLAMA COMMANDS ###
+function ollama_cli() {
+  local choice
+  
+  # Function to list models with nicer formatting
+  list_models() {
+    echo -e "\n${CYAN}Fetching available models...${RESET}"
+    
+    if ! command -v jq &> /dev/null; then
+      # Simple output without jq
+      echo -e "${YELLOW}Note: Install jq for better formatting${RESET}"
+      curl -s "http://localhost:${ollama_port}/api/tags" | grep -o '"name":"[^"]*"' | cut -d'"' -f4
+      return
+    fi
+    
+    # Get model list with jq
+    local model_data=$(curl -s "http://localhost:${ollama_port}/api/tags" 2>/dev/null)
+    local model_count=$(echo "$model_data" | jq -r '.models | length')
+    
+    if ([[ $model_count -eq 0 ]]); then
+      echo -e "${YELLOW}No models currently available.${RESET}"
+      return
+    fi
+    
+    echo -e "${WHITE}MODEL NAME       PARAMETERS  QUANT      FAMILY     SIZE      MODIFIED${RESET}"
+    echo "$model_data" | jq -r '.models[] | 
+      [.name,
+       .details.parameter_size,
+       .details.quantization_level,
+       .details.family,
+       (.size / 1024 / 1024 / 1024),
+       .modified_at] |
+      @tsv' | awk -F'\t' '{printf "%-15s %-11s %-10s %-10s %.2f GB  %s\n", $1, $2, $3, $4, $5, $6}'
+  }
+  
+  # Function to pull a new model
+  pull_model() {
+    echo -e "\n${CYAN}Available popular models:${RESET}"
+    echo -e " ${WHITE}1${RESET}: llama3         - Meta's Llama 3 (8B)"
+    echo -e " ${WHITE}2${RESET}: llama3:instruct - Instruction-tuned version"
+    echo -e " ${WHITE}3${RESET}: phi3           - Microsoft Phi-3 (mini)"
+    echo -e " ${WHITE}4${RESET}: phi3:medium    - Larger Phi-3 model"
+    echo -e " ${WHITE}5${RESET}: mistral        - Mistral 7B base model"
+    echo -e " ${WHITE}6${RESET}: neural-chat    - Neural Chat (openchat)"
+    echo -e " ${WHITE}7${RESET}: llava          - Multimodal model (vision)"
+    echo -e " ${WHITE}8${RESET}: ${YELLOW}custom${RESET}        - Enter custom model name"
+    
+    read -p "$(echo -e "${CYAN}Enter choice [1-8]:${RESET} ")" model_choice
+    
+    local model_name=""
+    case $model_choice in
+      1) model_name="llama3" ;;
+      2) model_name="llama3:instruct" ;;
+      3) model_name="phi3" ;;
+      4) model_name="phi3:medium" ;;
+      5) model_name="mistral" ;;
+      6) model_name="neural-chat" ;;
+      7) model_name="llava" ;;
+      8) 
+        read -p "$(echo -e "${CYAN}Enter model name (e.g. llama3:8b):${RESET} ")" model_name
+        ;;
+      *) 
+        echo -e "${YELLOW}Invalid choice, returning to menu${RESET}"
+        return
+        ;;
+    esac
+    
+    if ([[ -n "$model_name" ]]); then
+      echo -e "${CYAN}Pulling model ${WHITE}$model_name${CYAN} (this may take a while)...${RESET}"
+      
+      # Start the curl command in background
+      curl -s -X POST "http://localhost:${ollama_port}/api/pull" -d "{\"model\":\"$model_name\"}" > /dev/null 2>&1 &
+      curl_pid=$!
+      
+      local spin=0
+      local spinner=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+      
+      # Show spinner while download is in progress
+      while kill -0 $curl_pid 2>/dev/null; do
+        printf "\r${CYAN}%s Downloading model...${RESET}" "${spinner[$((spin % 10))]}"
+        spin=$((spin + 1))
+        sleep 0.2
+      done
+      
+      echo -e "\r${GREEN}✓ Model $model_name has been downloaded!${RESET}"
+    fi
+  }
+  
+  # Function to remove a model
+  remove_model() {
+    echo -e "\n${CYAN}Fetching models...${RESET}"
+    
+    # Get list of models for selection
+    local model_data=$(curl -s "http://localhost:${ollama_port}/api/tags" 2>/dev/null)
+    
+    if ! command -v jq &> /dev/null; then
+      echo -e "${YELLOW}jq not found. Using basic interface.${RESET}"
+      echo "Available models:"
+      local models=$(curl -s "http://localhost:${ollama_port}/api/tags" | grep -o '"name":"[^"]*"' | cut -d'"' -f4)
+      
+      if ([[ -z "$models" ]]); then
+        echo -e "${YELLOW}No models available to remove.${RESET}"
+        return
+      fi
+      
+      echo "$models" | nl
+      read -p "$(echo -e "${CYAN}Enter the number of the model to remove:${RESET} ")" model_num
+      
+      model_name=$(echo "$models" | sed -n "${model_num}p")
+    else
+      # Better interface with jq
+      local model_count=$(echo "$model_data" | jq -r '.models | length')
+      
+      if ([[ $model_count -eq 0 ]]); then
+        echo -e "${YELLOW}No models available to remove.${RESET}"
+        return
+      fi
+      
+      echo -e "${WHITE}NUM  MODEL NAME${RESET}"
+      echo "$model_data" | jq -r '.models[] | .name' | nl
+      
+      read -p "$(echo -e "${CYAN}Enter the number of the model to remove:${RESET} ")" model_num
+      
+      model_name=$(echo "$model_data" | jq -r ".models[$(($model_num-1))].name" 2>/dev/null)
+    fi
+    
+    if ([[ -n "$model_name" ]]); then
+      read -p "$(echo -e "${YELLOW}Confirm deletion of model '$model_name'? (y/n):${RESET} ")" confirm
+      
+      if ([[ "$confirm" == "y" || "$confirm" == "Y" ]]); then
+        echo -e "${CYAN}Removing model ${WHITE}$model_name${CYAN}...${RESET}"
+        curl -X DELETE "http://localhost:${ollama_port}/api/delete" -d "{\"name\":\"$model_name\"}"
+        echo -e "${GREEN}✓ Model $model_name has been removed!${RESET}"
+      else
+        echo -e "${YELLOW}Deletion canceled.${RESET}"
+      fi
+    else
+      echo -e "${RED}Invalid model number.${RESET}"
+    fi
+  }
+  
+  # Function to generate text with a selected model
+generate_text() {
+  echo -e "\n${CYAN}Fetching available models...${RESET}"
+  
+  # Get list of models for selection
+  local model_data=$(curl -s "http://localhost:${ollama_port}/api/tags" 2>/dev/null)
+  
+  if ! command -v jq &> /dev/null; then
+    echo -e "${RED}jq is required for proper text formatting. Please install jq.${RESET}"
+    return
+  fi
+  
+  # Better interface with jq
+  local model_count=$(echo "$model_data" | jq -r '.models | length')
+  
+  if [[ $model_count -eq 0 ]]; then
+    echo -e "${YELLOW}No models available. Please pull a model first.${RESET}"
+    return
+  fi
+  
+  echo -e "${WHITE}NUM  MODEL NAME${RESET}"
+  echo "$model_data" | jq -r '.models[] | .name' | nl
+  
+  read -p "$(echo -e "${CYAN}Enter the number of the model to use:${RESET} ")" model_num
+  
+  model_name=$(echo "$model_data" | jq -r ".models[$(($model_num-1))].name" 2>/dev/null)
+  
+  if [[ -n "$model_name" ]]; then
+    echo -e "${GREEN}Using model: ${WHITE}$model_name${RESET}"
+    echo -e "${YELLOW}Enter your prompt below (type on multiple lines if needed)${RESET}"
+    echo -e "${YELLOW}When finished, press Ctrl+D on a new line:${RESET}"
+    
+    # Read multi-line input until EOF (Ctrl+D)
+    prompt=$(cat)
+    
+    if [[ -n "$prompt" ]]; then
+      # Create spinner animation
+      local spin=0
+      local spinner=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+      
+      # Create temporary file for response
+      temp_response=$(mktemp)
+      
+      # Create JSON request - use the generate API instead of chat
+      local data=$(jq -n --arg model "$model_name" --arg prompt "$prompt" \
+                 '{"model": $model, "prompt": $prompt, "stream": false}')
+      
+      # Start the API request in background
+      (curl -s -X POST "http://localhost:${ollama_port}/api/generate" \
+           -H "Content-Type: application/json" \
+           -d "$data" > "$temp_response") &
+      
+      curl_pid=$!
+      
+      # Show spinner while waiting for response
+      while kill -0 $curl_pid 2>/dev/null; do
+        printf "\r${CYAN}%s Generating response...${RESET}" "${spinner[$((spin % 10))]}"
+        spin=$((spin + 1))
+        sleep 0.1
+      done
+      
+      echo -e "\r${CYAN}✓ Generating response... complete${RESET}\n"
+      
+      # Check if response contains an error
+      if grep -q "error" "$temp_response"; then
+        echo -e "${RED}Error occurred: $(grep -o '"error":"[^"]*"' "$temp_response" | cut -d'"' -f4)${RESET}"
+        rm "$temp_response"
+        return
+      fi
+      
+      # Extract the response text directly using jq
+      response_text=$(jq -r '.response' "$temp_response" 2>/dev/null)
+      
+      # Display the box header
+      echo -e "${BLUE}╔══════════════════════════════════════════════════════════════════════╗${RESET}"
+      
+      # Split the response text by newlines and format each line
+      echo "$response_text" | while IFS= read -r line || [[ -n "$line" ]]; do
+        if [[ -z "$line" ]]; then
+          # Empty line
+          printf "${BLUE}║${RESET}%70s${BLUE}║${RESET}\n" " "
+        else
+          # Wrap text at 68 characters
+          while [[ ${#line} -gt 68 ]]; do
+            printf "${BLUE}║${RESET} %-68s ${BLUE}║${RESET}\n" "${line:0:68}"
+            line="${line:68}"
+          done
+          printf "${BLUE}║${RESET} %-68s ${BLUE}║${RESET}\n" "$line"
+        fi
+      done
+      
+      echo -e "${BLUE}╚══════════════════════════════════════════════════════════════════════╝${RESET}"
+      
+      # Clean up temporary file
+      rm "$temp_response"
+      
+      echo -e "\n${GREEN}✓ Generation complete${RESET}"
+    else
+      echo -e "${YELLOW}Empty prompt. Cancelled.${RESET}"
+    fi
+  else
+    echo -e "${RED}Invalid model number.${RESET}"
+  fi
+}
+  
+  # Display the main menu
+  while true; do
+    echo -e "\n${BLUE}╔═══════════════════════════════════════════════╗${RESET}"
+    echo -e "${BLUE}║${RESET}         ${YELLOW}OLLAMA COMMAND INTERFACE${RESET}          ${BLUE}║${RESET}"
+    echo -e "${BLUE}╚═══════════════════════════════════════════════╝${RESET}"
+    
+    echo -e "\n${WHITE}Available commands:${RESET}"
+    echo -e " ${CYAN}[${WHITE}1${CYAN}]${RESET} List available models"
+    echo -e " ${CYAN}[${WHITE}2${CYAN}]${RESET} Pull new model"
+    echo -e " ${CYAN}[${WHITE}3${CYAN}]${RESET} Remove model"
+    echo -e " ${CYAN}[${WHITE}4${CYAN}]${RESET} Generate text with a model"
+    echo -e " ${CYAN}[${WHITE}e${CYAN}]${RESET} Exit (or press Ctrl+C)"
+    
+    read -p "$(echo -e "${YELLOW}Enter choice:${RESET} ")" choice
+    
+    case $choice in
+      1) list_models ;;
+      2) pull_model ;;
+      3) remove_model ;;
+      4) generate_text ;;
+      e|E|exit|quit) break ;;
+      *) echo -e "${RED}Invalid option. Please try again.${RESET}" ;;
+    esac
+  done
+}
 
 ### WAITING UNTIL WALLTIME ##
-echo -e "\n ${YELLOW}Press ${RED}ctrl+c${YELLOW} to exit the script at any time!${RESET}"
+echo -e "\n ${YELLOW}Ollama setup complete!${RESET}"
+echo -e "${CYAN}Would you like to start the Ollama command interface?${RESET}"
+echo -e " ${CYAN}[${WHITE}y${CYAN}]${RESET} Yes, start the CLI"
+echo -e " ${CYAN}[${WHITE}n${CYAN}]${RESET} No, just keep the session active"
+echo -e "${CYAN}(You can press ${WHITE}Ctrl+C${CYAN} at any time to exit completely)${RESET}"
+
+read -p "$(echo -e "${YELLOW}Enter choice [y/n]:${RESET} ")" cli_choice
+
+case $cli_choice in
+  y|Y|yes|YES|Yes)
+    echo -e "\n ${YELLOW}Starting Ollama command interface...${RESET}"
+    echo -e "${CYAN}Press ${WHITE}e${CYAN} or ${WHITE}Ctrl+C${CYAN} to exit the CLI at any time.${RESET}"
+    ollama_cli
+    echo -e "\n ${YELLOW}Exiting command interface. Session remains active until timeout.${RESET}"
+    echo -e "${YELLOW}Press ${RED}Ctrl+C${YELLOW} to exit the script completely.${RESET}"
+    ;;
+  *)
+    echo -e "\n ${YELLOW}CLI not started. Session remains active.${RESET}"
+    echo -e "${YELLOW}Press ${RED}Ctrl+C${YELLOW} to exit the script completely.${RESET}"
+    ;;
+esac
+
 sleep $WALLTIME
