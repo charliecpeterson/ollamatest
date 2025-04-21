@@ -251,6 +251,25 @@ check_port_available() {
   return 0  # Port is available
 }
 
+## ADD jq command check
+check_jq_installed() {
+  if ! command -v jq &> /dev/null; then
+    echo -e "${RED}Error: jq is not installed.${RESET}"
+    echo -e "${YELLOW}jq is required for this script to function properly.${RESET}"
+    echo -e "${YELLOW}Installation instructions:${RESET}"
+    echo -e "  ${WHITE}macOS:${RESET} brew install jq"
+    echo -e "  ${WHITE}Ubuntu/Debian:${RESET} sudo apt-get install jq"
+    echo -e "  ${WHITE}CentOS/RHEL:${RESET} sudo yum install jq"
+    echo ""
+    echo -e "${YELLOW}Please install jq and try again.${RESET}"
+    exit 1
+  fi
+  return 0
+}
+
+# Check if jq is installed early in script
+check_jq_installed
+
 # Set traps for different signals to ensure cleanup happens
 trap cleaning EXIT INT TERM HUP
 
@@ -475,7 +494,7 @@ if ([[ "$UI_TYPE" == "webui" ]]); then
   new_webui_port=""
   while ([[ -z "$new_webui_port" ]]); do
     new_webui_port=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"Running Open WebUI with port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*\"'")
-    sleep 0.5
+    sleep 1
   done
   webui_port=$new_webui_port
   echo "webui_port is ${webui_port}"
