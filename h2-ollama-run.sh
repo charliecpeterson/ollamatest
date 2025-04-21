@@ -143,7 +143,7 @@ function cleaning()
             spin=$((spin + 1))
             sleep 0.2
         done
-        echo -e "\b${GREEN}✓${RESET}"
+        echo -e "\b${GREEN}   ✓✓✓${RESET}"
     }
     
     # 1. Terminate Hoffman2 job if JOBID is set
@@ -175,17 +175,17 @@ function cleaning()
     fi
 
     echo -en "${CYAN}Cleaning up temporary files...${RESET} "   
-    if ssh -o BatchMode=yes -o ConnectTimeout=5 ${H2USERNAME}@hoffman2.idre.ucla.edu exit >/dev/null 2>&1; then
-        ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "sed -i '/${temp_comment}/d' ~/.ssh/authorized_keys"
-    fi
 
     if ([[ -n "$temp_dir" ]]); then
         rm -rf ${temp_dir}
         echo -e "${GREEN}✓${RESET}"
+        if ssh -o BatchMode=yes -o ConnectTimeout=5 ${H2USERNAME}@hoffman2.idre.ucla.edu exit >/dev/null 2>&1; then
+          ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "sed -i '/${temp_comment}/d' ~/.ssh/authorized_keys"
+        fi
     fi
 
     if [ -n "${SSH_AGENT_PID}" ]; then
-        ssh-agent -k >/dev/null 2>&1 && echo "ssh-agent killed."
+        ssh-agent -k >/dev/null 2>&1 
     fi
     if [ -f llmtmp ]; then 
         rm llmtmp >/dev/null 2>&1
@@ -482,7 +482,7 @@ if ([[ "$UI_TYPE" == "webui" ]]); then
   webui_mapping="${webui_port}:${out_host}:${webui_port}"
   
   # Port forwarding for both Ollama and WebUI
-   ssh -N -L ${ollama_port}:${out_host}:${ollama_port} -L ${webui_port}:${out_host}:${webui_port} ${H2USERNAME}@hoffman2.idre.ucla.edu 2>/dev/null &
+   ssh -o StrictHostKeyChecking=no -N -L ${ollama_port}:localhost:${ollama_port} -L ${webui_port}:localhost:${webui_port} -J ${H2USERNAME}@hoffman2.idre.ucla.edu ${H2USERNAME}@${out_host} 2>/dev/null &
    SSH_PORT_FWD_PID=$!
 
 elif ([[ "$UI_TYPE" == "jupyter" ]]); then
@@ -496,12 +496,13 @@ elif ([[ "$UI_TYPE" == "jupyter" ]]); then
   jupyter_mapping="${jupyter_port}:${out_host}:${jupyter_port}"
   
   # Port forwarding for both Ollama and Jupyter
-  ssh -N -L ${ollama_port}:${out_host}:${ollama_port} -L ${jupyter_port}:${out_host}:${jupyter_port} ${H2USERNAME}@hoffman2.idre.ucla.edu 2>/dev/null &
+  ssh -o StrictHostKeyChecking=no -N -L ${ollama_port}:localhost:${ollama_port} -L ${jupyter_port}:localhost:${jupyter_port} -J ${H2USERNAME}@hoffman2.idre.ucla.edu ${H2USERNAME}@${out_host} 2>/dev/null &
   SSH_PORT_FWD_PID=$!
 
 else
   # Original port forwarding for Ollama only
-  ssh -N -L ${ollama_port}:${out_host}:${ollama_port} ${H2USERNAME}@hoffman2.idre.ucla.edu 2>/dev/null &
+#  ssh -N -L ${ollama_port}:${out_host}:${ollama_port} ${H2USERNAME}@hoffman2.idre.ucla.edu 2>/dev/null &
+  ssh -o StrictHostKeyChecking=no -N -L ${ollama_port}:localhost:${ollama_port} -J ${H2USERNAME}@hoffman2.idre.ucla.edu ${H2USERNAME}@${out_host} 2>/dev/null &
   SSH_PORT_FWD_PID=$!
 fi
 
