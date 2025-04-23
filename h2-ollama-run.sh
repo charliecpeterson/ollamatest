@@ -191,6 +191,30 @@ function cleaning()
         rm llmtmp >/dev/null 2>&1
     fi
 
+    # Close SSH multiplexing connections
+    if [[ -n "$SSH_MASTER_PID" ]]; then
+        echo -en "${CYAN}Closing SSH master connection (PID: ${SSH_MASTER_PID})...${RESET} "
+        
+        # First try graceful exit
+        ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p -O exit ${H2USERNAME}@hoffman2.idre.ucla.edu 2>/dev/null
+        
+        # Then kill the process directly if it still exists
+        if kill -0 $SSH_MASTER_PID 2>/dev/null; then
+            kill $SSH_MASTER_PID 2>/dev/null
+            
+            # Wait a moment and force kill if still running
+            sleep 0.5
+            if kill -0 $SSH_MASTER_PID 2>/dev/null; then
+                kill -9 $SSH_MASTER_PID 2>/dev/null
+            fi
+        fi
+        
+        # Clean up socket files
+        rm -f ~/.ssh/controlmasters/* 2>/dev/null
+        
+        echo -e "${GREEN}✓${RESET}"
+    fi
+
     # Cute goodbye animation
     echo -e "\n${BLUE}╔═════════════════════════════════════════╗${RESET}"
     echo -e "${BLUE}║                                         ║${RESET}"
@@ -353,6 +377,23 @@ else
   UI_PARAM=""
 fi
 
+# Setup SSH multiplexing to reduce connection count
+setup_ssh_connections() {
+  echo -e "${CYAN}Setting up SSH connection multiplexing...${RESET}"
+  
+  # Create control directory if it doesn't exist
+  mkdir -p ~/.ssh/controlmasters
+
+  # Create a persistent master connection to login node
+  ssh -o ControlMaster=auto \
+      -o ControlPath=~/.ssh/controlmasters/%r@%h:%p \
+      -o ControlPersist=10m \
+      -fNM ${H2USERNAME}@hoffman2.idre.ucla.edu &
+  SSH_MASTER_PID=$!
+  echo -e "${GREEN}SSH multiplexing enabled for login node${RESET}"
+}
+
+
 # Set port values (use custom if provided, otherwise defaults)
 ollama_port=${OLLAMA_PORT:-11434}
 webui_port=${WEBUI_PORT:-8081}
@@ -392,6 +433,8 @@ echo "Checking Hoffman2 Password..."
 if test_ssh_key >/dev/null 2>&1; then
     eval "$(ssh-agent -s)"  >/dev/null
        ssh-add >/dev/null 2>&1
+
+       setup_ssh_connections
 else
     # No passwordless login; generate a temporary key and try installing it.
     temp_dir=$(mktemp -d -t tempssh-XXXXXXXX)
@@ -414,12 +457,14 @@ else
     if [ $success -ne 1 ]; then
         echo "Password incorrect Exiting..."
         exit 1
+        else
+          setup_ssh_connections
     fi
 fi
 
 # Now you can run multiple SSH commands without password prompts
-ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "echo starting ; rm -rf ~/.apptainer/instances/logs" > llmtmp
-ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "qrsh -N MYOLLAMA -l ${EXTRA_ARG}h_data=${JOBMEM}G,h_rt=${JOBTIME} -pe shared ${NUMCORES} 'source /u/local/Modules/default/init/modules.sh ; module purge ; module load apptainer ; module list ; echo HOSTNAME ; echo \$HOSTNAME ; export ollama_port=$ollama_port ; export webui_port=$webui_port ; export jupyter_port=$jupyter_port ; export OLLAMA_MODELS=${OLLAMA_MODELS_DIR} ; apptainer instance run --nv \$H2_CONTAINER_LOC/h2-ollama-mod-webui-0.6.2.sif myollama ${UI_PARAM} ; echo ollama_start ; sleep infinity'" >> llmtmp 2>/dev/null &
+ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p ${H2USERNAME}@hoffman2.idre.ucla.edu "echo starting ; rm -rf ~/.apptainer/instances/logs" > llmtmp
+ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p ${H2USERNAME}@hoffman2.idre.ucla.edu "qrsh -N MYOLLAMA -l ${EXTRA_ARG}h_data=${JOBMEM}G,h_rt=${JOBTIME} -pe shared ${NUMCORES} 'source /u/local/Modules/default/init/modules.sh ; module purge ; module load apptainer ; module list ; echo HOSTNAME ; echo \$HOSTNAME ; export ollama_port=$ollama_port ; export webui_port=$webui_port ; export jupyter_port=$jupyter_port ; export OLLAMA_MODELS=${OLLAMA_MODELS_DIR} ; apptainer instance run --nv \$H2_CONTAINER_LOC/h2-ollama-mod-webui-0.6.2.sif myollama ${UI_PARAM} ; echo ollama_start ; sleep infinity'" >> llmtmp 2>/dev/null &
 QRSH_PID=$!
 
 ## CHECK if SSH WORKED ##
@@ -438,7 +483,7 @@ max_jobid_attempts=60
 echo -e "${CYAN}Retrieving job ID...${RESET}"
 
 while [[ jobid_attempts -lt max_jobid_attempts ]]; do
-  JOBID=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "qstat | grep MYOLLAMA | grep ${H2USERNAME} | awk '{print \$1}'")
+  JOBID=$(ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p ${H2USERNAME}@hoffman2.idre.ucla.edu "qstat | grep MYOLLAMA | grep ${H2USERNAME} | awk '{print \$1}'")
   
   if ([[ -n "$JOBID" ]]); then
     echo -e "\r${GREEN}Job ID: ${JOBID}${RESET} (use for monitoring or cancellation)"
@@ -482,7 +527,7 @@ echo "Hoffman2 compute node is ${out_host}"
 ## Checking ports
 new_ollama_port=""
 while ([[ -z "$new_ollama_port" ]]); do
-  new_ollama_port=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"OLLAMA Running on .* with port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*$\"'")
+  new_ollama_port=$(ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"OLLAMA Running on .* with port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*$\"'")
   sleep 1
 done
 ollama_port=$new_ollama_port
@@ -493,7 +538,7 @@ echo "ollama is running on port is ${ollama_port}"
 if ([[ "$UI_TYPE" == "webui" ]]); then
   new_webui_port=""
   while ([[ -z "$new_webui_port" ]]); do
-    new_webui_port=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"Running Open WebUI with port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*\"'")
+  new_webui_port=$(ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"Running Open WebUI with port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*\"'")
     sleep 1
   done
   webui_port=$new_webui_port
@@ -501,28 +546,38 @@ if ([[ "$UI_TYPE" == "webui" ]]); then
   webui_mapping="${webui_port}:${out_host}:${webui_port}"
   
   # Port forwarding for both Ollama and WebUI
-   ssh -o StrictHostKeyChecking=no -N -L ${ollama_port}:localhost:${ollama_port} -L ${webui_port}:localhost:${webui_port} -J ${H2USERNAME}@hoffman2.idre.ucla.edu ${H2USERNAME}@${out_host} 2>/dev/null &
-   SSH_PORT_FWD_PID=$!
+ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p \
+    -o StrictHostKeyChecking=no -N \
+    -L ${ollama_port}:localhost:${ollama_port} \
+    -L ${webui_port}:localhost:${webui_port} \
+    -J ${H2USERNAME}@hoffman2.idre.ucla.edu ${H2USERNAME}@${out_host} 2>/dev/null &
+SSH_PORT_FWD_PID=$!
 
 elif ([[ "$UI_TYPE" == "jupyter" ]]); then
   new_jupyter_port=""
   while ([[ -z "$new_jupyter_port" ]]); do
-    new_jupyter_port=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"Starting Jupyter Lab on port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*\"'")
-    sleep 1
+    new_jupyter_port=$(ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"Starting Jupyter Lab on port [0-9]*\" ${LOG_PATH}.out | tail -1 | grep -o \"[0-9]*\"'")
+     sleep 1
   done
   jupyter_port=$new_jupyter_port
   echo "jupyter_port is ${jupyter_port}"
   jupyter_mapping="${jupyter_port}:${out_host}:${jupyter_port}"
   
   # Port forwarding for both Ollama and Jupyter
-  ssh -o StrictHostKeyChecking=no -N -L ${ollama_port}:localhost:${ollama_port} -L ${jupyter_port}:localhost:${jupyter_port} -J ${H2USERNAME}@hoffman2.idre.ucla.edu ${H2USERNAME}@${out_host} 2>/dev/null &
-  SSH_PORT_FWD_PID=$!
+ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p \
+    -o StrictHostKeyChecking=no -N \
+    -L ${ollama_port}:localhost:${ollama_port} \
+    -L ${jupyter_port}:localhost:${jupyter_port} \
+    -J ${H2USERNAME}@hoffman2.idre.ucla.edu ${H2USERNAME}@${out_host} 2>/dev/null &
+SSH_PORT_FWD_PID=$!
 
 else
   # Original port forwarding for Ollama only
-#  ssh -N -L ${ollama_port}:${out_host}:${ollama_port} ${H2USERNAME}@hoffman2.idre.ucla.edu 2>/dev/null &
-  ssh -o StrictHostKeyChecking=no -N -L ${ollama_port}:localhost:${ollama_port} -J ${H2USERNAME}@hoffman2.idre.ucla.edu ${H2USERNAME}@${out_host} 2>/dev/null &
-  SSH_PORT_FWD_PID=$!
+ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p \
+    -o StrictHostKeyChecking=no -N \
+    -L ${ollama_port}:localhost:${ollama_port} \
+    -J ${H2USERNAME}@hoffman2.idre.ucla.edu ${H2USERNAME}@${out_host} 2>/dev/null &
+SSH_PORT_FWD_PID=$!
 fi
 
 # Wait for Ollama API and models to be available
@@ -628,8 +683,7 @@ elif ([[ "$UI_TYPE" == "jupyter" ]]); then
   
   
   # Extract token from logs
-  jupyter_token=$(ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"token=[a-zA-Z0-9]*\" ${LOG_PATH}.err | tail -1 | cut -d= -f2'")
-  
+  jupyter_token=$(ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh ${out_host} 'grep -o \"token=[a-zA-Z0-9]*\" ${LOG_PATH}.err | tail -1 | cut -d= -f2'")  
   if ([[ -n "$jupyter_token" ]]); then
     # Token found, construct the full URL
     jupyter_url="http://localhost:${jupyter_port}/lab?token=${jupyter_token}"
