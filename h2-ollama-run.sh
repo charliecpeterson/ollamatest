@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-# Function to print the banner
 print_banner() {
   clear
   
@@ -21,7 +19,7 @@ YELLOW=$'\e[1;33m'
 WHITE=$'\e[1;37m'
 PURPLE=$'\e[1;35m'
 RESET=$'\e[0m'
-  # UCLA-themed animation
+
   echo ""
   for i in {1..3}; do
     clear
@@ -146,28 +144,28 @@ function cleaning()
         echo -e "\b${GREEN}   ✓✓✓${RESET}"
     }
     
-    # 1. Terminate Hoffman2 job if JOBID is set
+    # Terminate Hoffman2 job if JOBID is set
     if [[ -n "$JOBID" ]]; then
         echo -en "${CYAN}Terminating job ${WHITE}$JOBID${CYAN} on Hoffman2...${RESET} "
         ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "qdel $JOBID" >/dev/null 2>&1 &
         show_spinner
     fi
     
-    # 2. Stop Apptainer instance if out_host is set
+    # Stop Apptainer instance if out_host is set
     if [[ -n "$out_host" ]]; then
-        echo -en "${CYAN}Stopping Apptainer instance on ${WHITE}$out_host${CYAN}...${RESET} "
+        echo -en "${CYAN}Stopping Apptainer instance on ${WHITE}$out_host${CYAN}... (This may take a few extra seconds)${RESET} "
         ssh ${H2USERNAME}@hoffman2.idre.ucla.edu "ssh $out_host 'source /u/local/Modules/default/init/modules.sh ; module purge ; module load apptainer ; apptainer instance stop myollama'" >/dev/null 2>&1 &
         show_spinner
     fi
     
-    # 3. Kill SSH port forwarding
+    # Kill SSH port forwarding
     if ([[ -n "$SSH_PORT_FWD_PID" ]]); then
         echo -en "${CYAN}Closing network tunnels...${RESET} "
         kill $SSH_PORT_FWD_PID >/dev/null 2>&1 &
         show_spinner
     fi
     
-    # 4. Kill QRSH process
+    # Kill QRSH process
     if ([[ -n "$QRSH_PID" ]]); then
         echo -en "${CYAN}Closing remote session...${RESET} "
         kill $QRSH_PID >/dev/null 2>&1 &
@@ -210,7 +208,7 @@ function cleaning()
         fi
         
         # Clean up socket files
-        rm -f ~/.ssh/controlmasters/* 2>/dev/null
+        rm -rf ~/.ssh/controlmasters 2>/dev/null
         
         echo -e "${GREEN}✓${RESET}"
     fi
@@ -239,7 +237,7 @@ function cleaning()
 
     # Add final flourish
     printf "\r\033[K${CYAN}%s %s${RESET}" "🧠" "${message}"
-    sleep 0.5
+    sleep 0.7
     echo -e "\n\n${GREEN}Goodbye! 🚀${RESET}\n"
     
     exit 0
@@ -462,7 +460,6 @@ else
     fi
 fi
 
-# Now you can run multiple SSH commands without password prompts
 ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p ${H2USERNAME}@hoffman2.idre.ucla.edu "echo starting ; rm -rf ~/.apptainer/instances/logs" > llmtmp
 ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p ${H2USERNAME}@hoffman2.idre.ucla.edu "qrsh -N MYOLLAMA -l ${EXTRA_ARG}h_data=${JOBMEM}G,h_rt=${JOBTIME} -pe shared ${NUMCORES} 'source /u/local/Modules/default/init/modules.sh ; module purge ; module load apptainer ; module list ; echo HOSTNAME ; echo \$HOSTNAME ; export ollama_port=$ollama_port ; export webui_port=$webui_port ; export jupyter_port=$jupyter_port ; export OLLAMA_MODELS=${OLLAMA_MODELS_DIR} ; apptainer instance run --nv \$H2_CONTAINER_LOC/h2-ollama-mod-webui-0.6.2.sif myollama ${UI_PARAM} ; echo ollama_start ; sleep infinity'" >> llmtmp 2>/dev/null &
 QRSH_PID=$!
@@ -486,7 +483,7 @@ while [[ jobid_attempts -lt max_jobid_attempts ]]; do
   JOBID=$(ssh -o ControlPath=~/.ssh/controlmasters/%r@%h:%p ${H2USERNAME}@hoffman2.idre.ucla.edu "qstat | grep MYOLLAMA | grep ${H2USERNAME} | awk '{print \$1}'")
   
   if ([[ -n "$JOBID" ]]); then
-    echo -e "\r${GREEN}Job ID: ${JOBID}${RESET} (use for monitoring or cancellation)"
+    echo -e "\r${GREEN}Job ID: ${JOBID}${RESET}"
     break
   else
     jobid_attempts=$((jobid_attempts + 1))
@@ -955,7 +952,7 @@ generate_text() {
   # Display the main menu
   while true; do
     echo -e "\n${BLUE}╔═══════════════════════════════════════════════╗${RESET}"
-    echo -e "${BLUE}║${RESET}         ${YELLOW}OLLAMA COMMAND INTERFACE${RESET}          ${BLUE}║${RESET}"
+    echo -e "${BLUE}║${RESET}         ${YELLOW}OLLAMA COMMAND INTERFACE${RESET}           ${BLUE}║${RESET}"
     echo -e "${BLUE}╚═══════════════════════════════════════════════╝${RESET}"
     
     echo -e "\n${WHITE}Available commands:${RESET}"
